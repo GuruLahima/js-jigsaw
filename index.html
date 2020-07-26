@@ -34,7 +34,10 @@
 	<div style="visibility: hidden; position: absolute;">
 	  <img src="emma.jpg" crossorigin="anonymous" id="target"> 
 	</div>
+	<div>
+	</div>
 	<div class="container">
+		<h1 class="text-center">jigsaw game</h1>
 		<div class="mx-auto" id="puzzle_container"></div>
 	</div>
 	<div id="puzzle_piece_template" class="puzzle-piece">
@@ -43,10 +46,7 @@
 </body>
 	<script type="text/javascript">
 		let newImage;
-    let puzzle_pieces = [];
     let substitute;
-
-    
 
 		const cropper = new Cropper(target, {
 		  // aspectRatio: 16 / 9, // this affects the cropping parameters, don't enable it
@@ -63,10 +63,9 @@
 		    puzzle_container.style.paddingBottom = aspectRatioInverse * 100 + "%";*/
 		    puzzle_container.style.width = "50vw";
 		    puzzle_container.style.height = puzzle_container.offsetWidth / imageData.aspectRatio + "px";
-
+		    let counter = 0;
      		for(let j = 1; j <= 2; j++){
 			     for(let i = 1; i <= 3; i++){
-
 							// set  crop size 
 							this.cropper.setData({x: (i-1) * imageData.naturalWidth / 3, y:(j-1) * imageData.naturalHeight / 2, width: (imageData.naturalWidth / 3), height: (imageData.naturalHeight / 2) })
 
@@ -81,18 +80,30 @@
 							puzzle_piece.appendChild(newImageCanvas);
 
 							console.log(puzzle_piece);
-							puzzle_pieces.push(puzzle_piece);
+
+							// assign the correct position to each piece
+							puzzle_piece.correctPosition = counter;
 
 							// add dragging ability
 							makeDraggable(puzzle_piece);
 
 
+
+
 							this.cropper.reset();
+			     		counter++;
+
 
 		     		}
-		     }
-		     console.log(puzzle_pieces);
-
+		    }
+			  // shuffle puzzle
+				$(function () {
+					var parent = $(puzzle_container);
+					var divs = parent.children();
+					while (divs.length) {
+						parent.append(divs.splice(Math.floor(Math.random() * divs.length), 1)[0]);
+					}
+				});
 
 				 // save image in filesystem
 				 /*newImage.crossOrigin="anonymous";
@@ -134,36 +145,6 @@
 			  },
 				greedy: true,
 				drop: function( event, ui ) {
-					/*console.log($(ui.draggable).css("left"));
-					console.log($(this).offset().left);
-					console.log($(ui.draggable).offset().left);
-					let movedPieceTopVal = parseInt($(ui.draggable).css("top"));
-					let movedPieceLeftVal = parseInt($(ui.draggable).css("left"));
-					$(ui.draggable).css("top",  parseInt($(ui.draggable).css("top")) + ($(this).offset().top - $(ui.draggable).offset().top));
-					$(ui.draggable).css("left",  parseInt($(ui.draggable).css("left")) + ($(this).offset().left - $(ui.draggable).offset().left));*/
-
-/*					let draggedPieceNext = ui.draggable.next();
-					let draggedPiecePrev = ui.draggable.prev();
-					let dropSlotNext = $(this).next();
-					let dropSlotPrev = $(this).prev();
-					ui.draggable.detach();
-
-					console.log(dropSlotNext);
-					console.log(dropSlotPrev);
-					console.log(draggedPieceNext);
-					console.log(draggedPiecePrev);
-					if(draggedPieceNext.length != 0){
-						$(this).insertBefore(draggedPieceNext);
-					}
-					else{
-						$(this).insertAfter(draggedPiecePrev);
-					}
-					if(dropSlotNext.length != 0){
-						ui.draggable.insertBefore(dropSlotNext);
-					}
-					else{
-						ui.draggable.insertAfter(dropSlotPrev);	
-					}*/
 
 					let draggedPiecePrev = ui.draggable.prev();
 					ui.draggable.insertBefore($(this));
@@ -176,10 +157,11 @@
 					ui.draggable.css("top", 0);
 					ui.draggable.css("left", 0);
 
-					// $(this).css("top", movedPieceTopVal)
-					// $(this).css("left", movedPieceLeftVal)
+
 				}
 			});
 		}
+
+
 	</script>
 </html>
