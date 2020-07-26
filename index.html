@@ -37,8 +37,8 @@
 	<div>
 	</div>
 	<div class="container">
-		<h1 class="text-center">jigsaw game</h1>
-		<div class="mx-auto" id="puzzle_container"></div>
+		<h1 class="text-center">Puzzle game</h1>
+		<div class="mx-auto mt-4" id="puzzle_container"></div>
 	</div>
 	<div id="puzzle_piece_template" class="puzzle-piece">
 		
@@ -47,6 +47,10 @@
 	<script type="text/javascript">
 		let newImage;
     let substitute;
+    let solutionFound = false;
+    let timePanel;
+    let fadeScreen;
+    let timeCounter = 0;
 
 		const cropper = new Cropper(target, {
 		  // aspectRatio: 16 / 9, // this affects the cropping parameters, don't enable it
@@ -79,10 +83,10 @@
 							puzzle_piece.id = '';
 							puzzle_piece.appendChild(newImageCanvas);
 
-							console.log(puzzle_piece);
 
 							// assign the correct position to each piece
-							puzzle_piece.correctPosition = counter;
+							$(puzzle_piece).attr("order-num", counter);
+							console.log(puzzle_piece);
 
 							// add dragging ability
 							makeDraggable(puzzle_piece);
@@ -104,6 +108,9 @@
 						parent.append(divs.splice(Math.floor(Math.random() * divs.length), 1)[0]);
 					}
 				});
+
+				// start counting time
+				timeCounter = new Date();
 
 				 // save image in filesystem
 				 /*newImage.crossOrigin="anonymous";
@@ -146,6 +153,7 @@
 				greedy: true,
 				drop: function( event, ui ) {
 
+					// swap positiuons of dragged  and target pieces
 					let draggedPiecePrev = ui.draggable.prev();
 					ui.draggable.insertBefore($(this));
 					if(draggedPiecePrev.length == 0){
@@ -157,7 +165,29 @@
 					ui.draggable.css("top", 0);
 					ui.draggable.css("left", 0);
 
-
+					// check if solution is correct
+					solutionFound = true;
+					$(puzzle_container).children().each((index, item)=>{
+							console.log(item);
+						// console.log($(puzzle_container).children().index(item));
+						// console.log(item.correctPosition);
+						if($(puzzle_container).children().index(item) == $(item).attr("order-num"))
+						{
+							return true;	
+						}
+						else{
+							solutionFound = false;
+							return false;
+						}
+					});
+					if(solutionFound){
+						timeCounter = new Date() - timeCounter;
+						timeCounter = timeCounter / 1000;
+						// show time. lock puzzle
+						// timePanel.show();
+						setTimeout(()=>{alert("Puzzle finished in " + timeCounter + "  seconds");}, 100);
+						
+					}
 				}
 			});
 		}
