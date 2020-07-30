@@ -40,12 +40,24 @@
 	      /*box-shadow: 6px 6px 10px 0 #000000;*/
 	      box-shadow: 8px 8px 15px 0 rgba(0, 0, 0, 0.5), 0px 0px 4px 0px  #000000;
 	  }
+	  .puzzle-piece.correct:after { 
+	  /* this selector is more specific, so it takes precedence over the other :after */
+	      /*box-shadow: 6px 6px 10px 0 #000000;*/
+	      box-shadow: 0px 0px 2px 4px rgba(50, 255, 50, 1);
+	  }
+	  .puzzle-piece.finished:after { 
+	  /* this selector is more specific, so it takes precedence over the other :after */
+	      /*box-shadow: 6px 6px 10px 0 #000000;*/
+	      box-shadow: none;
+	  }
 
-  	  #puzzle_container{
+  	#puzzle_container{
 			display: flex; 
 			flex-wrap: wrap;
-
-
+		}
+		#puzzle_container.finished{
+	    box-shadow: 0px 0px 2px 4px rgba(50, 255, 50, 1);
+			
 		}  
 	</style>
 </head>
@@ -104,11 +116,11 @@
 							puzzle_piece.id = '';
 							puzzle_piece.style.display = "block"
 							puzzle_piece.addEventListener("mousedown", ()=>{
-								$(puzzle_piece).toggleClass('clicked');
+								$(puzzle_piece).addClass('clicked');
 								// alert();
 							});
 							puzzle_piece.addEventListener("mouseup", ()=>{
-								$(puzzle_piece).toggleClass('clicked');
+								$(puzzle_piece).removeClass('clicked');
 							});
 							puzzle_piece.appendChild(newImageCanvas);
 
@@ -160,12 +172,11 @@
 			  // opacity: 0.65,
 				stack: ".puzzle-piece",
 				start: function() {
-					// $( this ).css("display", "none");
 				},
 				drag: function() {
 				},
 				stop: function() {
-					// $( this ).css("box-shadow", "inset 3px 3px 10px 0 #000000 ");
+					$(this).removeClass('clicked');
 
 				},
 				create: function( event, ui ) {
@@ -192,10 +203,27 @@
 					ui.draggable.css("top", 0);
 					ui.draggable.css("left", 0);
 
+					// check if this piece position is correct
+							console.log(ui.draggable.attr("order-num"));
+							console.log($(puzzle_container).children().index(ui.draggable));
+					if(ui.draggable.attr("order-num") == $(puzzle_container).children().index(ui.draggable)){
+							ui.draggable.addClass('correct');
+					}
+					else{
+							ui.draggable.removeClass('correct');
+
+					}
+					if($(this).attr("order-num") == $(puzzle_container).children().index($(this))){
+						$(this).addClass('correct');
+					}
+					else{
+						$(this).removeClass('correct');
+					}
+
 					// check if solution is correct
 					solutionFound = true;
 					$(puzzle_container).children().each((index, item)=>{
-							console.log(item);
+							// console.log(item);
 						// console.log($(puzzle_container).children().index(item));
 						// console.log(item.correctPosition);
 						if($(puzzle_container).children().index(item) == $(item).attr("order-num"))
@@ -208,6 +236,13 @@
 						}
 					});
 					if(solutionFound){
+						// make all pieces glow
+						$(puzzle_container).children().each((index, item)=>{
+							$(item).addClass('finished');
+
+						});
+						$(puzzle_container).addClass('finished');
+						
 						timeCounter = new Date() - timeCounter;
 						timeCounter = timeCounter / 1000;
 						// show time. lock puzzle
