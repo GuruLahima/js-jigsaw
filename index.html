@@ -71,42 +71,54 @@
 	</div>
 	<div>
 	</div>
-	<div class="container d-flex h-100 flex-column justify-content-center">
+	<!-- the whole game container. should fill any space given to it, prioritizing height. hence the 100vh height -->
+	<div id="game_container" class="d-flex flex-column justify-content-center pt-3" style="height: 100vh">
+
+		<div id="instructions_container" class="container d-flex flex-column justify-content-center">	
+
+			<div class="row border border-success rounded border-3 flex-column"  id="instructions" >
+		
+				<div class="m-3 p-3 bg-success rounded">
+					<p class="text-light">Once you click the start button the puzzle is shown and the timer starts. Arrange the puzzle pieces in correct order to finish the puzzle.</p>
+
+				</div>
+				<div class="mx-auto">
+					
+					<button id="start_game" class="btn btn-success mb-2">START GAME</button>
+				</div>
+			</div>
+		</div>
+
+		<div id="puzzle_piece_template" class="puzzle-piece" style="display: none" >		
+		</div>
+
 		<div class="mx-auto  " id="puzzle_container" style="display: visible">
 
 		</div>
-		<div class="row border border-success rounded border-3"  id="instructions" >
-	
-			<div class="m-3 p-3 bg-success rounded">
-				<p class="text-light">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
 
-			</div>
-			<div class="mx-auto">
-				
-				<button id="start_game" class="btn btn-success mb-2">START GAME</button>
-			</div>
+		<div class="mx-auto" id="time_panel">
+			<div id="time_counter"></div>
 		</div>
+	</div>
 
-		
-	</div>
-	<div id="puzzle_piece_template" class="puzzle-piece" style="display: none" >
-		
-	</div>
 </body>
 	<script type="text/javascript">
 		let newImage;
     let substitute;
     let solutionFound = false;
-    let timePanel;
     let fadeScreen;
-    let timeCounter = 0;
     let croppedImages = [];
+    let puzzleContainerSize = "80%";
+    let puzzlePieces = [];
 
     target.src = "shoe.webp";
 
     start_game.addEventListener("click", (event) => {
-    	$(instructions).hide();
+    	$(instructions_container).remove();
     	$(puzzle_container).show();
+    	$(time_panel).show();
+
+    	$(time_counter).html(`<br /> 00 : 00 : 00`);
 
 			const cropper = new Cropper(target, {
 			  // aspectRatio: 16 / 9, // this affects the cropping parameters, don't enable it
@@ -116,13 +128,18 @@
 			  ready() {
 			    let imageData = this.cropper.getImageData();
 
-			    // set puzzle container to the aspect ratio of the image
-	/*		    let aspectRatioInverse = imageData.height / imageData.width;
-			    aspectRatioInverse = Math.round(aspectRatioInverse * 100) / 100;
-			    puzzle_container.style.width = "100%";
-			    puzzle_container.style.paddingBottom = aspectRatioInverse * 100 + "%";*/
-			    puzzle_container.style.width = "50vw";
-			    puzzle_container.style.height = puzzle_container.offsetWidth / imageData.aspectRatio + "px";
+			    // width of the puzzle container as percentage of whatever container it is in
+			    puzzle_container.style.width = puzzleContainerSize;
+			    // if container is wider than the width of the source image constraint the container to the size of the image
+			    // we do this because cropped pieces won't fit the puzzle piece containers and the puzzle's form falls appart
+			    puzzle_container.style.width = puzzle_container.offsetWidth > imageData.naturalWidth ? imageData.naturalWidth + "px" : puzzle_container.style.width;
+			    // constraint puzzle container to the aspect ratio of the image
+			    puzzle_container.style.height = (puzzle_container.offsetWidth / imageData.aspectRatio) + "px";
+
+			    // if height was made to fit the viewport thus runing the aspect ratio of the container readjust the width
+			    if(puzzle_container.offsetHeight < (puzzle_container.offsetWidth / imageData.aspectRatio)){
+			    	puzzle_container.style.width = (puzzle_container.offsetHeight * imageData.aspectRatio) + "px";
+			    }
 
 			    splitImage.call(this, imageData);
 
@@ -139,58 +156,12 @@
 					});
 
 					// start counting time
-					timeCounter = new Date();
+					// timeCounter = new Date();
+					timeTicker.start();
 
 			   },
 			});
     })
-
-		
-
-		let splitImage = function (imgData){
-	    let counter = 0;
-   		for(let j = 1; j <= 2; j++){
-		     for(let i = 1; i <= 3; i++){
-						// set  crop size 
-						this.cropper.setData({x: (i-1) * imgData.naturalWidth / 3, y:(j-1) * imgData.naturalHeight / 2, width: (imgData.naturalWidth / 3), height: (imgData.naturalHeight / 2) })
-
-						// crop image
-						let newImageCanvas = this.cropper.getCroppedCanvas({height: puzzle_container.offsetHeight / 2});
-						croppedImages.push(newImageCanvas);
-
-
-
-	     		}
-	    }
-		}
-
-		let createPuzzlePieces = function (item, index){
-
-			// creatte new piece for a single cropped image
-			let puzzle_piece = puzzle_piece_template.cloneNode();
-			puzzle_container.appendChild(puzzle_piece)
-			puzzle_piece.id = '';
-			puzzle_piece.style.display = "block"
-			puzzle_piece.addEventListener("mousedown", ()=>{
-				$(puzzle_piece).addClass('clicked');
-			});
-			puzzle_piece.addEventListener("mouseup", ()=>{
-				$(puzzle_piece).removeClass('clicked');
-			});
-			
-			// add the cropped image to the piece
-			puzzle_piece.appendChild(item);
-
-
-			// assign the correct position to each piece
-			$(puzzle_piece).attr("order-num", index);
-			console.log(puzzle_piece);
-
-			// add dragging ability
-			makeDraggable(puzzle_piece);
-
-			this.cropper.reset();
-		}
 
 		let makeDraggable = function (puzzle_piece){
 
@@ -224,50 +195,16 @@
 				drop: function( event, ui ) {
 
 					// swap positiuons of dragged  and target pieces
-					let draggedPiecePrev = ui.draggable.prev();
-					ui.draggable.insertBefore($(this));
-					if(draggedPiecePrev.length == 0){
-						$(this).prependTo($(this).parent());
-					}
-					else{
-						$(this).insertAfter(draggedPiecePrev);
-					}
-					ui.draggable.css("top", 0);
-					ui.draggable.css("left", 0);
-
-					// check if this piece position is correct
-							console.log(ui.draggable.attr("order-num"));
-							console.log($(puzzle_container).children().index(ui.draggable));
-					if(ui.draggable.attr("order-num") == $(puzzle_container).children().index(ui.draggable)){
-							ui.draggable.addClass('correct');
-					}
-					else{
-							ui.draggable.removeClass('correct');
-
-					}
-					if($(this).attr("order-num") == $(puzzle_container).children().index($(this))){
-						$(this).addClass('correct');
-					}
-					else{
-						$(this).removeClass('correct');
-					}
+					swap.call(this, ui);
 
 					// check if solution is correct
-					solutionFound = true;
-					$(puzzle_container).children().each((index, item)=>{
-							// console.log(item);
-						// console.log($(puzzle_container).children().index(item));
-						// console.log(item.correctPosition);
-						if($(puzzle_container).children().index(item) == $(item).attr("order-num"))
-						{
-							return true;	
-						}
-						else{
-							solutionFound = false;
-							return false;
-						}
-					});
+					solutionFound = solutionReached();
+					
 					if(solutionFound){
+						// stop timer
+						timeTicker.stop();
+
+
 						// make all pieces glow
 						$(puzzle_container).children().each((index, item)=>{
 							$(item).addClass('finished');
@@ -275,16 +212,154 @@
 						});
 						$(puzzle_container).addClass('finished');
 						
-						timeCounter = new Date() - timeCounter;
-						timeCounter = timeCounter / 1000;
-						// show time. lock puzzle
-						// timePanel.show();
-						setTimeout(()=>{alert("Puzzle finished in " + timeCounter + "  seconds");}, 100);
+						// lock pieces in place
+						puzzlePieces.forEach(function(index, item){
+							$(index).draggable("destroy");
+						})
 						
 					}
 				}
 			});
 		}
+
+		let splitImage = function (imgData){
+	    let counter = 0;
+   		for(let j = 1; j <= 2; j++){
+		     for(let i = 1; i <= 3; i++){
+						// set  crop size 
+						this.cropper.setData({x: (i-1) * imgData.naturalWidth / 3, y:(j-1) * imgData.naturalHeight / 2, width: (imgData.naturalWidth / 3), height: (imgData.naturalHeight / 2) })
+						// console.log("getCropBoxData:" + this.cropper.getCropBoxData());
+						// crop one piece of the image
+						let newImageCanvas = this.cropper.getCroppedCanvas({height: puzzle_container.offsetHeight / 2.01});
+						// console.log("puzzle_container.offsetHeight: " + puzzle_container.offsetHeight);
+
+						croppedImages.push(newImageCanvas);
+	     		}
+	    }
+		}
+
+		let createPuzzlePieces = function (item, index){
+
+			// create new piece for a single cropped image
+			let puzzle_piece = puzzle_piece_template.cloneNode();
+			puzzle_container.appendChild(puzzle_piece)
+			puzzle_piece.id = '';
+			puzzle_piece.style.display = "block"
+			puzzle_piece.addEventListener("mousedown", ()=>{
+				$(puzzle_piece).addClass('clicked');
+			});
+			puzzle_piece.addEventListener("mouseup", ()=>{
+				$(puzzle_piece).removeClass('clicked');
+			});
+			
+			// add the cropped image to the piece
+			puzzle_piece.appendChild(item);
+
+
+			// assign the correct position to each piece
+			$(puzzle_piece).attr("order-num", index);
+			// console.log(puzzle_piece);
+
+			// add dragging ability
+			makeDraggable(puzzle_piece);
+			puzzlePieces.push(puzzle_piece);
+
+			this.cropper.reset();
+		}
+
+		let swap = function(ui){
+			let draggedPiecePrev = ui.draggable.prev();
+			ui.draggable.insertBefore($(this));
+			if(draggedPiecePrev.length == 0){
+				$(this).prependTo($(this).parent());
+			}
+			else{
+				$(this).insertAfter(draggedPiecePrev);
+			}
+			ui.draggable.css("top", 0);
+			ui.draggable.css("left", 0);
+
+			// check if this piece position is correct
+			if(ui.draggable.attr("order-num") == $(puzzle_container).children().index(ui.draggable)){
+					ui.draggable.addClass('correct');
+			}
+			else{
+					ui.draggable.removeClass('correct');
+			}
+			if($(this).attr("order-num") == $(puzzle_container).children().index($(this))){
+				$(this).addClass('correct');
+			}
+			else{
+				$(this).removeClass('correct');
+			}
+		}
+
+		let solutionReached = function () {
+			let wrongPositionFound;
+			$(puzzle_container).children().each((index, item)=>{
+				if($(puzzle_container).children().index(item) == $(item).attr("order-num"))
+					return true; // continue
+				else{
+					wrongPositionFound = true;
+					return false; // break
+				}
+			});
+
+			return wrongPositionFound ? false : true;
+		}
+
+		/* timer module */
+		let timeTicker = (() => {
+		  var minutes = seconds = miliseconds = 0;
+		  var timerTick;
+		  var timeCounter = 0;
+		  let actualMiliseconds = 0;
+		  return {
+		    start : () => {
+		      if(!timerTick) {
+		      timeCounter = new Date();
+		      timerTick = setInterval(() => {
+		        miliseconds++;
+		        if(miliseconds == 20) {
+		          seconds += 1;
+		          miliseconds = 0;
+		          if(seconds == 60) {
+		            minutes += 1;
+		            seconds = 0;
+		          }
+		        }
+
+		        timeCounter = new Date() - timeCounter;
+		        timeCounter = timeCounter / 1000;
+		        actualMiliseconds = Math.floor((timeCounter % 1) * 1000);
+		        $(time_counter).html(`<br />
+																	${minutes.toString().length == 1 ? "0" + minutes : minutes}
+															: ${seconds.toString().length == 1 ? "0" + seconds : seconds}
+															: ${actualMiliseconds.toString().length == 1 ? "00" + actualMiliseconds : actualMiliseconds.toString().length == 2 ? "0" + actualMiliseconds : actualMiliseconds}`);
+		      },50);
+		      }
+		    },
+		    stop : () => {
+		      if(timerTick) {
+		      clearInterval(timerTick);
+		        timerTick = false;
+		        timeCounter = new Date() - timeCounter;
+		        timeCounter = timeCounter / 1000;
+		        actualMiliseconds = Math.floor((timeCounter % 1) * 1000);
+		        $(time_counter).html(`<br />
+																	${minutes.toString().length == 1 ? "0" + minutes : minutes}
+															: ${seconds.toString().length == 1 ? "0" + seconds : seconds}
+															: ${actualMiliseconds.toString().length == 1 ? "00" + actualMiliseconds : actualMiliseconds.toString().length == 2 ? "0" + actualMiliseconds : actualMiliseconds}`);
+		      }
+		    },
+		    reset : () => {
+		      miliseconds = seconds = minutes = 0;
+		      clearInterval(timerTick);
+		      timerTick = false;
+		      $(time_counter).html(`<br />0${minutes} : 0${seconds} : 0${miliseconds}`);
+		    }
+		  }
+		})();
 
 
 	</script>
